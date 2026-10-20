@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Breakout Q-Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+:root{--bg:#10141b;--panel:#1a212b;--tile:#10151c;--board:#2a3240;--line:#2b3441;--fg:#e8ecf2;--mut:#9aa4b2;--y:#e9bd4a;--g:#5fbf9a;--r:#e0675a;--grey:#6b7686;--pill:#e6ebf2;--pillfg:#10141b;--btnfg:#1a1405;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#f4f5f7;--panel:#fff;--tile:#f0f2f5;--board:#e3e7ee;--line:#dde1e8;--fg:#161b22;--mut:#5b6573;--y:#d9a21e;--pill:#161b22;--pillfg:#fff}}
+:root[data-theme="light"]{--bg:#f4f5f7;--panel:#fff;--tile:#f0f2f5;--board:#e3e7ee;--line:#dde1e8;--fg:#161b22;--mut:#5b6573;--y:#d9a21e;--pill:#161b22;--pillfg:#fff}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 "Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1120px;margin:0 auto;padding:28px 20px 40px}
+h1{font-size:clamp(38px,7vw,64px);line-height:1.05;margin:0 0 14px;font-weight:800;letter-spacing:-.02em}
+.hl{background:linear-gradient(transparent 64%,color-mix(in srgb,var(--y) 55%,transparent) 64%)}
+.sub{color:var(--mut);font-size:18px;max-width:780px;margin:0 0 26px}
+.tabs{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:26px}
+.tab{border-radius:999px;padding:14px 26px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:800 18px "Inter",system-ui,sans-serif;cursor:pointer}
+.tab.on{background:var(--pill);color:var(--pillfg)}
+.grid{display:grid;grid-template-columns:minmax(0,520px) minmax(0,1fr);gap:26px;align-items:start}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:28px;padding:26px;margin-bottom:26px}
+.panel.acc{border-left:6px solid var(--y)}
+h2{font-size:26px;margin:0 0 10px;font-weight:800}
+.board{background:var(--board);border-radius:22px;padding:14px}
+canvas{display:block;width:100%;height:auto;border-radius:14px}
+#g{touch-action:none}
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:center;color:var(--mut);font-size:15px;margin:18px 0}
+.legend b{color:var(--fg);font-family:"JetBrains Mono",ui-monospace,Menlo,monospace}
+.btns{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:center}
+.btn{border-radius:18px;padding:14px 22px;border:1px solid var(--line);background:transparent;color:var(--fg);font:800 17px "Inter",system-ui,sans-serif;cursor:pointer}
+.btn.y{background:var(--y);border-color:var(--y);color:var(--btnfg)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btns label{color:var(--mut);display:flex;align-items:center;gap:8px;font-size:15px}
+select{border-radius:18px;padding:13px 16px;border:1px solid var(--line);background:var(--tile);color:var(--fg);font:600 17px "Inter",system-ui,sans-serif}
+select:focus,.btn:focus-visible,.tab:focus-visible{outline:3px solid var(--y);outline-offset:2px}
+.prog{height:8px;background:var(--tile);border-radius:4px;overflow:hidden;margin:18px 0 8px}
+.prog i{display:block;height:100%;width:0;background:var(--y)}
+.note{color:var(--mut);font-size:15px;text-align:center;min-height:24px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+@media(max-width:560px){.tiles{grid-template-columns:repeat(2,1fr)}}
+.tile{background:var(--tile);border-radius:16px;padding:16px}
+.tile b{display:block;font:700 34px "JetBrains Mono",ui-monospace,Menlo,monospace;line-height:1.2}
+.tile span{color:var(--mut);font-size:15px}
+.cap{color:var(--mut);font-size:15px;margin:0 0 6px}
+.sw{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin:0 4px 0 8px}
+.tbl{border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-top:14px}
+table{width:100%;border-collapse:collapse;font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:16px}
+th,td{padding:11px 14px;border-top:1px solid var(--line)}
+thead th{border-top:0;text-align:right;font-weight:700}
+thead th:first-child,tbody th{text-align:left}
+tbody th{font-weight:700;white-space:nowrap}
+tbody th.now{background:var(--pill);color:var(--pillfg)}
+td{text-align:right}td.best{text-decoration:underline}
+p.t{color:var(--mut);margin:0 0 4px}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:14px;background:var(--tile);padding:2px 6px;border-radius:6px}
+</style>
+</head>
+<body>
+<main>
+<h1>Breakout <span class="hl"><u>Q</u>-Lab</span></h1>
+<p class="sub">A paddle, a ball and a wall of bricks. Nobody tells the agent how to play. It only learns from what happens when it moves, and it writes what it learns into a small neural network that scores every move: one Q-value for left, stay and right.</p>
+<div class="tabs">
+  <button class="tab on" id="t1">Round 1 · 28-brick challenge</button>
+  <button class="tab" id="t2">Round 2 · 150-brick challenge</button>
+  <button class="tab" id="t3">Round 3 · The AI learns alone (28 bricks)</button>
+  <button class="tab" id="t4">Round 4 · The AI learns alone (150 bricks)</button>
+</div>
+
+<div class="grid">
+  <section class="panel">
+    <div class="board"><canvas id="g" width="400" height="520"></canvas></div>
+    <div class="legend"><span>Brick <b>+1</b></span><span>Ball caught <b>+0.3</b></span><span>Ball missed <b>−1</b></span><span>Ordinary step <b>0</b></span><span>Lives <b>5</b></span></div>
+    <div class="btns" id="c1"><button class="btn y" id="hStart">Start playing</button></div>
+    <div class="btns" id="c2" hidden>
+      <button class="btn" id="step">Take one step</button>
+      <button class="btn y" id="w1">Watch one try</button>
+      <button class="btn" id="p100">Practice 100 tries</button>
+      <button class="btn" id="p1000">Practice 1,000</button>
+      <label>Speed <select id="spd"><option value="1">Slow</option><option value="2" selected>Normal</option><option value="6">Fast</option></select></label>
+      <button class="btn" id="stop" hidden>Stop</button>
+      <button class="btn" id="rst">Reset AI</button>
+    </div>
+    <div class="btns" id="c3" hidden>
+      <button class="btn y" id="ch1">Start challenge</button>
+      <button class="btn" id="ch10">Run 10 instantly</button>
+      <label>Speed <select id="spd3"><option value="1">Slow</option><option value="3">Normal</option><option value="8" selected>Fast</option></select></label>
+      <button class="btn" id="stop3" hidden>Stop</button>
+    </div>
+    <div class="prog"><i id="pBar"></i></div>
+    <div class="note" id="status"></div>
+  </section>
+
+  <div>
+    <section class="panel">
+      <div class="tiles">
+        <div class="tile"><b id="tA">0</b><span id="tAL">Your tries</span></div>
+        <div class="tile"><b id="tB">0</b><span id="tBL">Bricks this try</span></div>
+        <div class="tile"><b id="tC">–</b><span id="tCL">Your best</span></div>
+        <div class="tile"><b id="tD">–</b><span id="tDL">AI best</span></div>
+      </div>
+      <div id="p1">
+        <h2>How to play</h2>
+        <p class="t">Move the paddle with <code>←</code> <code>→</code> (or <code>A</code> <code>D</code>), or drag a finger or the mouse across the game board. You get 5 lives: when the ball falls you lose one and a new ball is served; when all 5 are gone, the try is over. The AI plays with 5 lives too. Break as many bricks as you can (Round 1 has 28, Round 2 has 150), then see whether the AI can beat you in Rounds 3 and 4.</p>
+      </div>
+      <div id="p2" hidden>
+        <p class="cap"><span id="capT">Bricks broken per practice try, most recent on the right.</span>
+          <span class="sw" style="background:var(--g)"></span>cleared all
+          <span class="sw" style="background:var(--r)"></span>lost the ball
+          <span class="sw" style="background:var(--grey)"></span>gave up</p>
+        <canvas id="ch" width="440" height="170"></canvas>
+      </div>
+    </section>
+
+    <section class="panel" id="hp">
+      <h2>Your state</h2>
+      <p class="t">These are the 6 numbers the AI would see at every step. The second table counts what you pressed in each situation while the ball was coming down, so you can compare your habits with the AI’s Q-values in Rounds 3 and 4. Underlined = what you pressed most.</p>
+      <div class="tbl"><table><thead><tr><th>Live state</th><th>Value</th></tr></thead><tbody id="hs"></tbody></table></div>
+      <div class="tbl"><table><thead><tr><th>Situation</th><th>←</th><th>•</th><th>→</th></tr></thead><tbody id="hb"></tbody></table></div>
+    </section>
+
+    <section class="panel" id="qp" hidden>
+      <h2>The Q-values</h2>
+      <p class="t">A table would need a row for every possible ball position, so the AI uses a small neural network instead. Each row is a situation (a state) and each column is a move (an action). The number is the network’s current guess of how good that move is. Underlined = best known move. The highlighted row is the live game; the others are fixed test situations with the ball coming down, so you can watch it learn to chase the ball.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>State</th><th title="Move left">←</th><th title="Stay">•</th><th title="Move right">→</th></tr></thead>
+        <tbody id="qb"></tbody>
+      </table></div>
+    </section>
+  </div>
+</div>
+
+<section class="panel acc">
+  <h2>How the AI learns (Deep Q-Learning)</h2>
+  <p class="t">Each step the AI sees 6 numbers (paddle position, ball position and speed). A network with layers 6 → 32 → 32 → 3 outputs a Q-value per move. While practicing it picks a random move with probability ε (which shrinks over time) and otherwise the move with the highest Q. Every experience goes into a replay buffer; the network learns from 32 random memories at a time, aiming for <code>r + γ · max Q_target(s′, a′)</code>, and a frozen copy (the target network) is refreshed every 500 steps.</p>
+</section>
+</main>
+
+<script>
+const W=200,H=260,PW=36,PY=H-18,R=4,BY=36;
+let BR=4,BC=7,BW=W/BC,BH=12,NB=BR*BC;
+function setWall(r,c,h){BR=r;BC=c;BW=W/c;BH=h;NB=r*c}
+const cv=document.getElementById('g'),cx=cv.getContext('2d');
+const chv=document.getElementById('ch'),chx=chv.getContext('2d');
+const $=id=>document.getElementById(id);
+const rnd=Math.random,ri=n=>Math.floor(rnd()*n);
+const clampX=x=>Math.max(PW/2,Math.min(W-PW/2,x));
+
+/* ---------- Environment ---------- */
+let bricks,alive,px,bx,by,vx,vy,tt;
+let lives=5;
+function serveBall(){bx=30+rnd()*(W-60);by=H*0.45;vx=(rnd()<.5?-1:1)*(1+rnd()*2);vy=3}
+function envReset(){bricks=new Uint8Array(NB).fill(1);alive=NB;px=W/2;serveBall();tt=0;lives=5}
+function gameOver(res){
+  if(res.d&&alive>0){lives--;if(lives>0){serveBall();return false}return true}
+  return res.d||res.trunc;
+}
+function envStep(a){
+  tt++;let r=0,d=false;
+  px=clampX(px+(a-1)*6);bx+=vx;by+=vy;
+  if(bx<R){bx=R;vx=-vx}else if(bx>W-R){bx=W-R;vx=-vx}
+  if(by<R){by=R;vy=-vy}
+  if(vy>0&&by+R>=PY&&by+R-vy<=PY+4&&Math.abs(bx-px)<=PW/2+R){
+    vy=-Math.abs(vy);vx=Math.max(-3.5,Math.min(3.5,(bx-px)/(PW/2)*3.5));by=PY-R;r+=0.3;
+  }
+  const c=Math.floor(bx/BW),rw=Math.floor((by-BY)/BH);
+  if(rw>=0&&rw<BR&&c>=0&&c<BC&&bricks[rw*BC+c]){bricks[rw*BC+c]=0;alive--;vy=-vy;r+=1}
+  if(by>H){r=-1;d=true}
+  if(alive===0)d=true;
+  return{r,d,trunc:tt>=(mode==='human'?60000:NB>100?10000:4000)};
+}
+const stateOf=(p,x,y,u,v)=>Float32Array.of(p/W,x/W,y/H,u/4,v/4,(x-p)/W*2);
+const state=()=>stateOf(px,bx,by,vx,vy);
+
+/* ---------- Neural network + Adam ---------- */
+function mk(s){
+  const n={s,L:s.length-1,P:[],G:[],M:[],V:[],t:0};
+  for(let l=0;l<n.L;l++){
+    const A=new Float32Array(s[l]*s[l+1]),k=Math.sqrt(2/s[l]);
+    for(let i=0;i<A.length;i++)A[i]=(rnd()*2-1)*k*1.7;
+    n.P.push(A,new Float32Array(s[l+1]));
+  }
+  n.P.forEach(p=>{n.G.push(new Float32Array(p.length));n.M.push(new Float32Array(p.length));n.V.push(new Float32Array(p.length))});
+  return n;
+}
+function fwd(n,x){
+  const acts=[x];let a=x;
+  for(let l=0;l<n.L;l++){
+    const ni=n.s[l],no=n.s[l+1],Wt=n.P[2*l],b=n.P[2*l+1],o=new Float32Array(no);
+    for(let j=0;j<no;j++){let s=b[j];for(let i=0;i<ni;i++)s+=Wt[j*ni+i]*a[i];o[j]=(l<n.L-1&&s<0)?0:s}
+    acts.push(o);a=o;
+  }
+  return acts;
+}
+const qOf=(n,s)=>fwd(n,s)[n.L];
+const argmax=q=>q.indexOf(Math.max(...q));
+
+/* ---------- DQN agent ---------- */
+const GAMMA=.97,LR=.001,BATCH=32,CAP=20000,TGT=500,EPS_STEPS=8000;
+let qn,tn,buf,bi,steps,lossAvg,eps,episodes,brk,out,aiBest,lastRand,c3b,c3o;
+const SL={},HD={};
+function saveAg(r){SL[r]={qn,tn,buf,bi,steps,lossAvg,eps,episodes,brk,out,aiBest,lastRand}}
+function loadAg(r){if(!SL[r])init();else({qn,tn,buf,bi,steps,lossAvg,eps,episodes,brk,out,aiBest,lastRand}=SL[r])}
+function init(){
+  qn=mk([6,32,32,3]);tn=mk([6,32,32,3]);syncT();
+  buf=[];bi=0;steps=0;lossAvg=null;eps=1;episodes=0;brk=[];out=[];aiBest=null;lastRand=false;c3b=[];c3o=[];
+  envReset();
+}
+function syncT(){qn.P.forEach((p,i)=>tn.P[i].set(p))}
+function train(){
+  qn.G.forEach(g=>g.fill(0));
+  for(let k=0;k<BATCH;k++){
+    const e=buf[ri(buf.length)],acts=fwd(qn,e.s);
+    const y=e.r+(e.d?0:GAMMA*Math.max(...qOf(tn,e.s2)));
+    const err=acts[qn.L][e.a]-y;
+    let d=new Float32Array(3);d[e.a]=Math.max(-1,Math.min(1,err));
+    for(let l=qn.L-1;l>=0;l--){
+      const ni=qn.s[l],no=qn.s[l+1],prev=acts[l],Wt=qn.P[2*l],gW=qn.G[2*l],gb=qn.G[2*l+1],nd=new Float32Array(ni);
+      for(let j=0;j<no;j++){
+        const dj=d[j];if(!dj)continue;gb[j]+=dj;
+        for(let i=0;i<ni;i++){gW[j*ni+i]+=dj*prev[i];nd[i]+=dj*Wt[j*ni+i]}
+      }
+      if(l>0)for(let i=0;i<ni;i++)if(prev[i]<=0)nd[i]=0;
+      d=nd;
+    }
+  }
+  qn.t++;const c1=1-Math.pow(.9,qn.t),c2=1-Math.pow(.999,qn.t);
+  for(let p=0;p<qn.P.length;p++){
+    const P=qn.P[p],G=qn.G[p],M=qn.M[p],V=qn.V[p];
+    for(let i=0;i<P.length;i++){
+      const g=G[i]/BATCH;M[i]=.9*M[i]+.1*g;V[i]=.999*V[i]+.001*g*g;
+      P[i]-=LR*(M[i]/c1)/(Math.sqrt(V[i]/c2)+1e-8);
+    }
+  }
+}
+function agentStep(){
+  const s=state();
+  eps=Math.max(.05,1-steps/EPS_STEPS);
+  let a;
+  if(rnd()<eps){a=ri(3);lastRand=true}else{a=argmax(qOf(qn,s));lastRand=false}
+  const res=envStep(a),ex={s,a,r:res.r,d:res.d,s2:state()};
+  if(buf.length<CAP)buf.push(ex);else{buf[bi]=ex;bi=(bi+1)%CAP}
+  steps++;
+  if(buf.length>=500&&steps%4===0)train();
+  if(steps%TGT===0)syncT();
+  if(gameOver(res)){
+    const n=NB-alive;brk.push(n);out.push(alive===0?'c':res.d?'l':'g');
+    aiBest=Math.max(aiBest||0,n);episodes++;envReset();
+  }
+}
+
+/* ---------- Modes ---------- */
+let mode='idle',round=1,hw=0,ov='Press “Start playing”',humanBest=null,humanTries=0,pTarget=0,pStart=0,ended=false;
+const KEYS={};
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();KEYS[k]=1;if(mode==='human'&&k.startsWith('arrow'))e.preventDefault()});
+addEventListener('keyup',e=>{delete KEYS[e.key.toLowerCase()]});
+function ptr(e){if(mode!=='human')return;const r=cv.getBoundingClientRect();px=clampX((e.clientX-r.left)/r.width*W)}
+cv.addEventListener('pointermove',ptr);cv.addEventListener('pointerdown',ptr);
+
+function setBusy(b){['step','w1','p100','p1000','ch1','ch10'].forEach(i=>$(i).disabled=b);$('stop').hidden=!b;$('stop3').hidden=!b}
+function stopAll(){mode='idle';hw=0;setBusy(false);$('pBar').style.width='0'}
+function setRound(n){
+  stopAll();if(round>2)saveAg(round);HD[round<3?round:round-2]={humanBest,humanTries,hCnt,hLast};round=n;if(n===2||n===4)setWall(10,15,8);else setWall(4,7,12);{const d=HD[n<3?n:n-2]||{humanBest:null,humanTries:0,hCnt:HB.map(()=>[0,0,0]),hLast:'–'};({humanBest,humanTries,hCnt,hLast}=d)}if(n>2)loadAg(n);envReset();ended=false;
+  $('t1').classList.toggle('on',n===1);$('t2').classList.toggle('on',n===2);$('t3').classList.toggle('on',n===3);$('t4').classList.toggle('on',n===4);
+  ['c1','p1','hp'].forEach(i=>$(i).hidden=n>2);['c2','qp','p2'].forEach(i=>$(i).hidden=n<3);
+  const L=[n<3?'Your tries':'AI tries','Bricks this try','Your best','AI best'];['tAL','tBL','tCL','tDL'].forEach((id,i)=>$(id).textContent=L[i]);$('capT').textContent='Bricks broken per practice try (out of '+NB+'), most recent on the right. Dashed line: your best.';
+  ov=n<3?'Press “Start playing”':'Press Watch or Practice';$('hStart').textContent='Start playing';
+  $('status').textContent=n>2?'Practice the AI on the '+NB+'-brick wall, then watch it play.':'';
+}
+function startHuman(){stopAll();envReset();hw=performance.now()+3000;mode='human';ov='';$('status').textContent=''}
+const HB=[['Ball far left',-1e9,-45],['Ball a bit left',-45,-10],['Ball right above',-10,10],['Ball a bit right',10,45],['Ball far right',45,1e9]];
+let hCnt=HB.map(()=>[0,0,0]),hLast='–';
+const hBucket=()=>{const o=bx-px;return HB.findIndex(b=>o>=b[1]&&o<b[2])};
+function humanTick(){
+  const a=(KEYS.arrowleft||KEYS.a)?0:(KEYS.arrowright||KEYS.d)?2:1;
+  if(hw>0){const left=hw-performance.now();if(left>0){px=clampX(px+(a-1)*6);ov=(lives<5?'Ball lost! ':'Get ready… ')+Math.ceil(left/1000)+'\n'+lives+' '+(lives>1?'lives':'life')+' left';return}hw=0;ov=''}
+  if(vy>0)hCnt[hBucket()][a]++;
+  hLast=['←','•','→'][a];
+  const res=envStep(a),lost=res.d&&alive>0,over=gameOver(res);
+  if(lost&&!over)hw=performance.now()+5000;
+  if(over){
+    const n=NB-alive;humanBest=humanBest==null?n:Math.max(humanBest,n);humanTries++;
+    mode='idle';ended=true;ov=(alive===0?'All bricks cleared! 🎉\n':'Game over: '+n+' / '+NB+' bricks\n')+'Play again, or try another round';
+    $('hStart').textContent='Play again';
+  }
+}
+function watch(){
+  if(mode!=='idle')return;envReset();ended=false;mode='watch';ov='';setBusy(true);
+  $('status').textContent='Watching the AI play one try with what it has learned…';
+}
+function watchTick(){
+  for(let k=0;k<+$('spd').value;k++){
+    const res=envStep(argmax(qOf(qn,state())));
+    if(gameOver(res)){
+      const n=NB-alive;aiBest=Math.max(aiBest||0,n);mode='idle';ended=true;setBusy(false);
+      const vs=alive===0?'Wall cleared! 🎉':humanBest==null?'':n>humanBest?'The AI beat you!':n===humanBest?'A tie with you':'You are still ahead';
+      ov=n+' / '+NB+' bricks\n'+vs;
+      $('status').textContent='The AI broke '+n+' of '+NB+' bricks'+(humanBest!=null?' (your best: '+humanBest+')':'')+(round===3?'. Practice more and watch again.':'. Practice more and watch again.');
+      return;
+    }
+  }
+}
+function challenge(){if(mode!=='idle')return;envReset();ended=false;mode='watch';ov='';setBusy(true);$('status').textContent='The AI is attempting the 150-brick wall…'}
+let bDone=0;
+function batch(){if(mode!=='idle')return;mode='batch';bDone=0;envReset();ended=false;ov='';setBusy(true)}
+function batchTick(){
+  const t0=performance.now();
+  while(performance.now()-t0<12&&bDone<10){
+    const res=envStep(argmax(qOf(qn,state())));
+    if(gameOver(res)){c3b.push(NB-alive);c3o.push(alive===0?'c':res.d?'l':'g');bDone++;envReset()}
+  }
+  $('pBar').style.width=(bDone*10)+'%';$('status').textContent='Running challenge '+bDone+' / 10…';
+  if(bDone>=10){
+    const l=c3b.slice(-10),av=(l.reduce((x,y)=>x+y,0)/10).toFixed(1),cl=c3o.slice(-10).filter(x=>x==='c').length;
+    mode='idle';setBusy(false);envReset();
+    $('status').textContent='10 runs: average '+av+' of '+NB+' bricks, best '+Math.max(...l)+', wall cleared '+cl+' time'+(cl===1?'':'s')+'.';
+    ov='10 runs finished\nAverage '+av+' / '+NB;
+  }
+}
+function takeStep(){
+  if(mode!=='idle')return;if(ended){envReset();ended=false}
+  ov='';agentStep();
+  $('status').textContent='One step taken. ε = '+eps.toFixed(2)+', the move was '+(lastRand?'random (exploring).':'the best known (exploiting).');
+}
+function practice(N){
+  if(mode!=='idle')return;mode='practice';pTarget=N;pStart=episodes;envReset();ended=false;ov='';setBusy(true);
+}
+function practiceTick(){
+  const t0=performance.now();
+  while(performance.now()-t0<12&&episodes-pStart<pTarget)agentStep();
+  const d=episodes-pStart;$('pBar').style.width=(100*d/pTarget)+'%';
+  $('status').textContent='Practicing: '+d+' / '+pTarget+' tries…';
+  if(d>=pTarget){
+    const av=a=>(a.reduce((x,y)=>x+y,0)/a.length).toFixed(1);
+    mode='idle';setBusy(false);envReset();
+    $('status').textContent='Done: '+pTarget+' tries, average '+av(brk.slice(-pTarget))+' bricks per try (last 20: '+av(brk.slice(-20))+'). Press Watch one try.';
+    ov='Practice finished\nPress “Watch one try”';
+  }
+}
+$('t1').onclick=()=>setRound(1);$('t2').onclick=()=>setRound(2);$('t3').onclick=()=>setRound(3);$('t4').onclick=()=>setRound(4);
+$('ch1').onclick=challenge;$('ch10').onclick=batch;$('stop3').onclick=()=>$('stop').onclick();
+$('hStart').onclick=startHuman;$('w1').onclick=watch;$('step').onclick=takeStep;
+$('p100').onclick=()=>practice(100);$('p1000').onclick=()=>practice(1000);
+$('stop').onclick=()=>{stopAll();envReset();ended=false;ov='Stopped';$('status').textContent='Stopped.'};
+$('rst').onclick=()=>{stopAll();init();ended=false;ov='The AI forgot everything';$('status').textContent='The AI was reset and knows nothing yet.'};
+
+/* ---------- Drawing ---------- */
+const COL=['#e0675a','#e9bd4a','#5fbf9a','#6f93d9'];
+function rr(x,y,w,h,r,f){cx.beginPath();cx.roundRect?cx.roundRect(x,y,w,h,r):cx.rect(x,y,w,h);cx.fillStyle=f;cx.fill()}
+function drawGame(){
+  cx.setTransform(2,0,0,2,0,0);
+  cx.fillStyle='#202733';cx.fillRect(0,0,W,H);
+  for(let r=0;r<BR;r++)for(let c=0;c<BC;c++)if(bricks[r*BC+c])rr(c*BW+1,BY+r*BH+1,BW-2,BH-2,2,COL[r%4]);
+  rr(px-PW/2,PY,PW,6,3,'#e6ebf2');
+  cx.beginPath();cx.arc(bx,by,R,0,7);cx.fillStyle='#fff';cx.fill();
+  cx.textAlign='left';cx.fillStyle='#9aa4b2';cx.font='9px ui-monospace,Menlo,monospace';cx.fillText('Bricks '+(NB-alive)+' / '+NB,5,13);
+  cx.textAlign='right';cx.fillStyle='#e0675a';cx.fillText('♥'.repeat(Math.max(0,lives)),W-5,13);
+  if(ov){
+    const ls=ov.split('\n');cx.fillStyle='rgba(16,20,27,.82)';cx.fillRect(0,H/2-14-ls.length*8,W,28+ls.length*16);
+    cx.fillStyle='#e8ecf2';cx.textAlign='center';cx.font='800 12px Inter,system-ui,sans-serif';
+    ls.forEach((t,i)=>cx.fillText(t,W/2,H/2-2-(ls.length-1)*8+i*16));cx.textAlign='left';
+  }
+}
+function drawChart(){
+  const w=440,h=170,x0=34,x1=w-6,yT=14,yB=h-30,N=60;
+  chx.clearRect(0,0,w,h);
+  const st=getComputedStyle(document.documentElement),g=n=>st.getPropertyValue(n).trim();
+  chx.strokeStyle=g('--line');chx.lineWidth=1;chx.fillStyle=g('--mut');chx.font='13px "JetBrains Mono",ui-monospace,monospace';
+  chx.beginPath();chx.moveTo(x0,yT);chx.lineTo(x1,yT);chx.moveTo(x0,yB);chx.lineTo(x1,yB);chx.stroke();
+  chx.fillText(String(NB),2,yT+4);chx.fillText('0',10,yB);chx.fillText('tries →',2,h-6);
+  const o=out.slice(-N),d=brk.slice(-N);
+  if(!d.length){chx.fillText('No tries yet. Press Practice.',x0+10,yB-14);return}
+  const bw=(x1-x0)/N,CM={c:g('--g'),l:g('--r'),g:g('--grey')};
+  d.forEach((v,i)=>{const x=x1-(d.length-i)*bw,hh=Math.max(2,v/NB*(yB-yT));chx.fillStyle=CM[o[i]];chx.fillRect(x+1,yB-hh,Math.max(1,bw-2),hh)});
+  if(humanBest!=null){const y=yB-humanBest/NB*(yB-yT);chx.strokeStyle=g('--y');chx.lineWidth=2;chx.setLineDash([6,4]);chx.beginPath();chx.moveTo(x0,y);chx.lineTo(x1,y);chx.stroke();chx.setLineDash([]);chx.fillStyle=g('--y');chx.fillText('you',x1-30,y-5)}
+}
+const PROBES=[['Now (live)',null],['Ball far left',-70],['Ball a bit left',-25],['Ball right above',0],['Ball a bit right',25],['Ball far right',70]];
+$('qb').innerHTML=PROBES.map((p,i)=>'<tr><th'+(i?'':' class="now"')+'>'+p[0]+'</th><td></td><td></td><td></td></tr>').join('');
+const QR=[...$('qb').rows];
+function drawTable(){
+  PROBES.forEach((p,i)=>{
+    const q=qOf(qn,p[1]==null?state():stateOf(W/2,W/2+p[1],H*.6,0,3)),b=argmax(q);
+    for(let j=0;j<3;j++){
+      const td=QR[i].cells[j+1],v=q[j],a=Math.min(.55,Math.abs(v)/3);
+      td.textContent=v.toFixed(2);td.className=j===b?'best':'';
+      td.style.background=v>=0?'rgba(95,191,154,'+a+')':'rgba(224,103,90,'+a+')';
+    }
+  });
+}
+const HS=[['Paddle x',()=>px/W],['Ball x',()=>bx/W],['Ball y',()=>by/H],['Ball speed x',()=>vx/4],['Ball speed y',()=>vy/4],['Ball − paddle',()=>(bx-px)/W*2],['Your last move',null]];
+$('hs').innerHTML=HS.map(r=>'<tr><th>'+r[0]+'</th><td></td></tr>').join('');
+$('hb').innerHTML=HB.map(b=>'<tr><th>'+b[0]+'</th><td></td><td></td><td></td></tr>').join('');
+const HSR=[...$('hs').rows],HBR=[...$('hb').rows];
+function drawHuman(){
+  HS.forEach((r,i)=>{HSR[i].cells[1].textContent=r[1]?r[1]().toFixed(2):hLast});
+  const cur=hBucket();
+  HB.forEach((b,i)=>{
+    const row=HBR[i],c=hCnt[i],tot=c[0]+c[1]+c[2],mx=Math.max(...c);
+    row.cells[0].className=i===cur?'now':'';
+    for(let j=0;j<3;j++){const td=row.cells[j+1];td.textContent=c[j];td.className=tot&&c[j]===mx?'best':'';td.style.background=tot?'rgba(233,189,74,'+(.5*c[j]/tot)+')':''}
+  });
+}
+function updateUI(){
+  $('tA').textContent=round<3?humanTries:episodes;$('tB').textContent=NB-alive;
+  {const ab=round>2?aiBest:(SL[round+2]?SL[round+2].aiBest:null);$('tC').textContent=humanBest==null?'–':humanBest;$('tD').textContent=ab==null?'–':ab}
+  if(round>=3){drawChart();drawTable()}else drawHuman();
+}
+function loop(){
+  if(mode==='human')humanTick();else if(mode==='watch')watchTick();else if(mode==='practice')practiceTick();else if(mode==='batch')batchTick();
+  drawGame();updateUI();requestAnimationFrame(loop);
+}
+init();loop();
+</script>
+</body>
+</html>
